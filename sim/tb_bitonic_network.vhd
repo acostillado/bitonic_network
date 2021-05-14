@@ -50,8 +50,8 @@ architecture simulation of tb_bitonic_network is
   -----------------------------------------------------------------------------
   signal ACLK             : std_logic;
   signal ARSTN            : std_logic;
-  signal RANDOM_SEQUENCE  : t_network_array(0 to 7)(C_ELEMENT_WIDTH-1 downto 0);
-  signal SORTED_SEQUENCE  : t_network_array(0 to 7)(C_ELEMENT_WIDTH-1 downto 0); 
+  signal RANDOM_SEQUENCE  : t_network_array(0 to 7);
+  signal SORTED_SEQUENCE  : t_network_array(0 to 7); 
   --
   signal tb_finish        : std_logic := '0';
 

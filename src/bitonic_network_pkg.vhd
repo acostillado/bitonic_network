@@ -22,7 +22,10 @@ package Bitonic_Network_pkg is
   -----------------------------------------------------------------------------
   --type t_network_array is array (natural range <>) of std_logic_vector; -- Not supported in the simulator
   type t_network_array is array (natural range <>) of std_logic_vector(C_ELEMENT_WIDTH-1 downto 0);
-
+  
+  type t_direction_array is array (0 to 1) of string(1 to 5);
+    
+  constant C_DIRECTION : t_direction_array := ("RIGHT", "LEFT ");    
   -----------------------------------------------------------------------------
   -- Procedures
   -----------------------------------------------------------------------------

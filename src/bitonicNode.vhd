@@ -1,6 +1,6 @@
 -------------------------------------------------------------------------------
 -- Company     : Barcelona Supercomputing Center (BSC)
--- Engineer    : Daniel Jiménez Mazure
+-- Engineer    : Daniel Jimï¿½nez Mazure
 -- *******************************************************************
 -- File       : Bitonic_Network.vhd
 -- Author     : $Autor: dasjimaz@gmail.com $
@@ -23,42 +23,26 @@ use ieee.std_logic_textio.all;
 library work;
 use work.Bitonic_Network_pkg.all;
 
---entity bitonic8elements is
---  generic(
---    G_NETWORK_INPUTS : integer := 8;
---    G_ELEMENT_WIDTH  : integer := 64;
---    G_REG_OUT        : integer := 0;
---    G_LENGTH         : integer := 4;
---    G_DIRECTION      : string  := "RIGHT"
---    );
---  port(
---    CLK                : in  std_logic;
---    EIGHT_ELEMENTS_IN  : in  t_network_array(0 to 7)(G_ELEMENT_WIDTH-1 downto 0);
---    EIGHT_ELEMENTS_OUT : out t_network_array(0 to 7)(G_ELEMENT_WIDTH-1 downto 0)
---    );
---end bitonic8elements;
-
-entity bitonic8elements is
-  generic(
-    G_NETWORK_INPUTS : integer := 8;
-    G_ELEMENT_WIDTH  : integer := 64;
-    G_REG_OUT        : integer := 0;
-    G_LENGTH         : integer := 4;
-    G_DIRECTION      : string  := "RIGHT"
-    );
-  port(
-    CLK                : in  std_logic;
-    EIGHT_ELEMENTS_IN  : in  t_network_array(0 to 7);
-    EIGHT_ELEMENTS_OUT : out t_network_array(0 to 7)
-    );
-end bitonic8elements;
+entity bitonicNode is
+  generic (
+    G_ELEMENT_WIDTH : integer := 64;
+    G_REG_OUT       : integer := 0;
+    G_LENGTH        : integer := 4;
+    G_DIRECTION     : string  := "RIGHT"
+  );
+  port (
+    CLK          : in std_logic;
+    ELEMENTS_IN  : in t_network_array(0 to G_LENGTH * 2 - 1);
+    ELEMENTS_OUT : out t_network_array(0 to G_LENGTH * 2 - 1)
+  );
+end bitonicNode;
 
 -------------------------------------------------------------------------------
 -- Arch
 -- Not using components anymore but using direct entity instantiation
 -------------------------------------------------------------------------------
 
-architecture RTL of bitonic8elements is
+architecture RTL of bitonicNode is
 
   -----------------------------------------------------------------------------
   -- CONSTANTS
@@ -66,78 +50,68 @@ architecture RTL of bitonic8elements is
   -----------------------------------------------------------------------------
   -- SIGNALS
   -----------------------------------------------------------------------------
---  signal s_pixel_array : t_network_array(0 to 7)(G_ELEMENT_WIDTH-1 downto 0);
---  signal s_sort_node   : t_network_array(0 to 7)(G_ELEMENT_WIDTH-1 downto 0);
-  signal s_pixel_array : t_network_array(0 to 7);
-  signal s_sort_node   : t_network_array(0 to 7);
+  signal s_element_array : t_network_array(0 to G_LENGTH * 2 - 1);
+  signal s_sort_node     : t_network_array(0 to G_LENGTH * 2 - 1);
 
-begin  -- architecture RTL
+begin -- architecture RTL
 
-
-  s_pixel_array <= EIGHT_ELEMENTS_IN;
-
-
+  s_element_array <= ELEMENTS_IN;
   -----------------------------------------------------------------------------
   -- Sorting network
   -----------------------------------------------------------------------------
 
   GEN_RIGHT : if G_DIRECTION = "RIGHT" generate
     --
-    SORT_NET_RIGHT : process(s_pixel_array, s_sort_node)
+    SORT_NET_RIGHT : process (s_element_array, s_sort_node)
     begin
-      GEN_NODES : for i in 0 to 3 loop
+      GEN_NODES : for i in 0 to G_LENGTH - 1 loop
         ---------------------------------------------------------------------------
         -- First Stage
         ---------------------------------------------------------------------------
-        if s_pixel_array(i) > s_pixel_array(i+G_LENGTH) then
-          s_sort_node(i)          <= s_pixel_array(i+G_LENGTH);
-          s_sort_node(i+G_LENGTH) <= s_pixel_array(i);
+        if s_element_array(i) > s_element_array(i + G_LENGTH) then
+          s_sort_node(i)            <= s_element_array(i + G_LENGTH);
+          s_sort_node(i + G_LENGTH) <= s_element_array(i);
         else
-          s_sort_node(i)          <= s_pixel_array(i);
-          s_sort_node(i+G_LENGTH) <= s_pixel_array(i+G_LENGTH);
+          s_sort_node(i)            <= s_element_array(i);
+          s_sort_node(i + G_LENGTH) <= s_element_array(i + G_LENGTH);
         end if;
       end loop;
     end process;
   end generate GEN_RIGHT;
 
-
-  GEN_LEFT : if G_DIRECTION = "LEFT" generate
+  GEN_LEFT : if G_DIRECTION = "LEFT " generate
     --
-    SORT_NET_LEFT : process(s_pixel_array, s_sort_node)
+    SORT_NET_LEFT : process (s_element_array, s_sort_node)
     begin
-      GEN_NODES : for i in 0 to 3 loop
+      GEN_NODES : for i in 0 to G_LENGTH - 1 loop
         ---------------------------------------------------------------------------
         -- First Stage
         ---------------------------------------------------------------------------
-        if s_pixel_array(i) < s_pixel_array(i+G_LENGTH) then
-          s_sort_node(i)          <= s_pixel_array(i+G_LENGTH);
-          s_sort_node(i+G_LENGTH) <= s_pixel_array(i);
+        if s_element_array(i) < s_element_array(i + G_LENGTH) then
+          s_sort_node(i)            <= s_element_array(i + G_LENGTH);
+          s_sort_node(i + G_LENGTH) <= s_element_array(i);
         else
-          s_sort_node(i)          <= s_pixel_array(i);
-          s_sort_node(i+G_LENGTH) <= s_pixel_array(i+G_LENGTH);
+          s_sort_node(i)            <= s_element_array(i);
+          s_sort_node(i + G_LENGTH) <= s_element_array(i + G_LENGTH);
         end if;
       end loop;
     end process;
   end generate GEN_LEFT;
-
-
   -----------------------------------------------------------------------------
   -- Generate Outputs
   -----------------------------------------------------------------------------
 
   GEN_REG_OUT : if G_REG_OUT = 1 generate
-    REG_PROC : process(CLK)
+    REG_PROC : process (CLK)
     begin
       if rising_edge(CLK) then
-        EIGHT_ELEMENTS_OUT <= s_sort_node;
+        ELEMENTS_OUT <= s_sort_node;
       end if;
     end process;
   end generate GEN_REG_OUT;
 
   GEN_OUT : if G_REG_OUT = 0 generate
-    EIGHT_ELEMENTS_OUT <= s_sort_node;
+    ELEMENTS_OUT <= s_sort_node;
   end generate GEN_OUT;
-
-
 
 end architecture RTL;

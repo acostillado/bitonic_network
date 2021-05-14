@@ -75,14 +75,14 @@ begin  -- architecture RTL
   -- Sorting network (8 elements)
   -----------------------------------------------------------------------------
 
-  Inst_random2bitonic : entity work.random2bitonic
+  Inst_random2bitonic : entity work.random2bitonicNode
     port map (
       CLK         => CLK,
       RANDOM_IN   => RANDOM_IN,
       BITONIC_OUT => s_pixel_bitonic
       );
 
-  Inst_bitonic2sort : entity work.bitonic2sort
+  Inst_bitonic2sort : entity work.bitonic2sortNode
     port map (
       CLK        => CLK,
       BITONIC_IN => s_pixel_bitonic,
