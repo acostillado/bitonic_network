@@ -54,8 +54,8 @@ architecture simulation of tb_bitonic_network is
   signal ARSTN             : std_logic;
   signal RANDOM_SEQUENCE   : t_network_array(0 to 7);
   signal SORTED_SEQUENCE   : t_network_array(0 to 7);
-  signal NETWORK_CONTROL   : std_logic_vector(C_NCOMP_TB*2-1 downto 0) := (others => '1');
-  signal NETWORK_RESULT    : std_logic_vector(C_NCOMP_TB*2-1 downto 0);
+  signal NETWORK_CONTROL   : std_logic_vector(C_NCOMP_TB-1 downto 0) := (others => '1');
+  signal NETWORK_RESULT    : std_logic_vector(C_NCOMP_TB-1 downto 0);
   --
   signal tb_finish         : std_logic := '0';
 
