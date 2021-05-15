@@ -6,7 +6,7 @@
 -- Author     : $Autor: dasjimaz@gmail.com $
 -- Date       : $Date: 2021-05-06 $
 -- Revisions  : $Revision: $
--- Last update: 2021-05-07
+-- Last update: 2021-05-15
 -- *******************************************************************
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -21,7 +21,6 @@ use std.textio.all;
 
 use ieee.math_real.uniform;
 use ieee.math_real.floor;
-
 library work;
 use work.Bitonic_Network_pkg.all;
 
@@ -41,19 +40,24 @@ architecture simulation of tb_bitonic_network is
   -----------------------------------------------------------------------------
   -- Constants
   -----------------------------------------------------------------------------
-  constant C_RESET_PERIOD : time      := 1 us;
-  constant CLK_125_PERIOD : time      := 8.0 ns;
-  constant C_ELEMENT_WIDTH : integer  := 64;
+  constant C_RESET_PERIOD  : time      := 1 us;
+  constant CLK_125_PERIOD  : time      := 8.0 ns;
+  constant C_ELEMENT_WIDTH : integer   := 64;
+  --
+  constant C_LOGnDEPTH_TB  : integer   := C_LOGnDEPTH;
+  constant C_NCOMP_TB      : integer   := C_NCOMP;
   --
   -----------------------------------------------------------------------------
   -- Signals
   -----------------------------------------------------------------------------
-  signal ACLK             : std_logic;
-  signal ARSTN            : std_logic;
-  signal RANDOM_SEQUENCE  : t_network_array(0 to 7);
-  signal SORTED_SEQUENCE  : t_network_array(0 to 7); 
+  signal ACLK              : std_logic;
+  signal ARSTN             : std_logic;
+  signal RANDOM_SEQUENCE   : t_network_array(0 to 7);
+  signal SORTED_SEQUENCE   : t_network_array(0 to 7);
+  signal NETWORK_CONTROL   : std_logic_vector(C_NCOMP_TB*2-1 downto 0) := (others => '1');
+  signal NETWORK_RESULT    : std_logic_vector(C_NCOMP_TB*2-1 downto 0);
   --
-  signal tb_finish        : std_logic := '0';
+  signal tb_finish         : std_logic := '0';
 
 
 begin
@@ -117,6 +121,8 @@ begin
       )
     port map (
       CLK        => ACLK,
+      CTRL       => NETWORK_CONTROL,
+      RES        => NETWORK_RESULT,
       RANDOM_IN  => RANDOM_SEQUENCE,
       SORTED_OUT => SORTED_SEQUENCE
       );

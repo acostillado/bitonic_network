@@ -1,6 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use ieee.math_real.all;
 
 use std.textio.all;
 use ieee.std_logic_textio.all;
@@ -16,21 +17,28 @@ package Bitonic_Network_pkg is
   constant C_VELEMENTS           : integer := 16;
   constant C_NLANES              : integer := 8;
   constant C_NETWORK_INPUTS      : integer := 8;
+  constant C_LOGnDEPTH           : integer := integer(ceil(log2(real(C_NETWORK_INPUTS))));
+  constant C_NCOMP               : integer := C_LOGnDEPTH * C_NETWORK_INPUTS;
 
   -----------------------------------------------------------------------------
   -- Types
   -----------------------------------------------------------------------------
   --type t_network_array is array (natural range <>) of std_logic_vector; -- Not supported in the simulator
   type t_network_array is array (natural range <>) of std_logic_vector(C_ELEMENT_WIDTH-1 downto 0);
-  
+
   type t_direction_array is array (0 to 1) of string(1 to 5);
-    
-  constant C_DIRECTION : t_direction_array := ("RIGHT", "LEFT ");    
+  --
+  type t_muxConf1x4 is array (0 to 0) of std_logic_vector(3 downto 0);
+  type t_muxConf2x2 is array (0 to 1) of std_logic_vector(1 downto 0);
+  type t_muxConf4x1 is array (0 to 3) of std_logic_vector(0 downto 0);
+
+  constant C_DIRECTION : t_direction_array := ("RIGHT", "LEFT ");  -- note the
+                                                                   -- space
   -----------------------------------------------------------------------------
   -- Procedures
   -----------------------------------------------------------------------------
-  
-  
+
+
   procedure ReadFileDDR (
     constant file_name : in  string;
     constant lin_num   : in  integer;

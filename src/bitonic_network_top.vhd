@@ -6,7 +6,7 @@
 -- Author     : $Autor: dasjimaz@gmail.com $
 -- Date       : $Date: 2021-05-06 $
 -- Revisions  : $Revision: $
--- Last update: 2021-05-07
+-- Last update: 2021-05-15
 -- *******************************************************************
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -26,27 +26,16 @@ library work;
 use work.Bitonic_Network_pkg.all;
 
 
---entity Bitonic_Network is
---  generic(
---    G_NETWORK_INPUTS : integer := 8;
---    G_ELEMENT_WIDTH : integer := 64;
---    G_PIPE_CYCLES : integer := 2        --retiming?
---    );
---  port(
---    CLK        : in  std_logic;
---    RANDOM_IN  : in  t_network_array(0 to G_NETWORK_INPUTS-1)(G_ELEMENT_WIDTH-1 downto 0);
---    SORTED_OUT : out t_network_array(0 to G_NETWORK_INPUTS-1)(G_ELEMENT_WIDTH-1 downto 0)
---    );
---end Bitonic_Network;
-
 entity Bitonic_Network is
   generic(
     G_NETWORK_INPUTS : integer := 8;
-    G_ELEMENT_WIDTH : integer := 64;
-    G_PIPE_CYCLES : integer := 2        --retiming?
+    G_ELEMENT_WIDTH  : integer := 64;
+    G_PIPE_CYCLES    : integer := 2                           --retiming?
     );
   port(
     CLK        : in  std_logic;
+    CTRL       : in  std_logic_vector(C_NCOMP-1 downto 0);  -- 2stages
+    RES        : out std_logic_vector(C_NCOMP-1 downto 0);  -- 2stages
     RANDOM_IN  : in  t_network_array(0 to G_NETWORK_INPUTS-1);
     SORTED_OUT : out t_network_array(0 to G_NETWORK_INPUTS-1)
     );
@@ -62,11 +51,11 @@ architecture RTL of Bitonic_Network is
   -----------------------------------------------------------------------------
   -- Signals
   -----------------------------------------------------------------------------
---  signal s_pixel_bitonic : t_network_array(0 to G_NETWORK_INPUTS-1)(G_ELEMENT_WIDTH-1 downto 0);
---  signal s_pixel_sorted  : t_network_array(0 to G_NETWORK_INPUTS-1)(G_ELEMENT_WIDTH-1 downto 0);
+--  signal s_element_bitonic : t_network_array(0 to G_NETWORK_INPUTS-1)(G_ELEMENT_WIDTH-1 downto 0);
+--  signal s_element_sorted  : t_network_array(0 to G_NETWORK_INPUTS-1)(G_ELEMENT_WIDTH-1 downto 0);
 
-  signal s_pixel_bitonic : t_network_array(0 to G_NETWORK_INPUTS-1);
-  signal s_pixel_sorted  : t_network_array(0 to G_NETWORK_INPUTS-1);
+  signal s_element_bitonic : t_network_array(0 to G_NETWORK_INPUTS-1);
+  signal s_element_sorted  : t_network_array(0 to G_NETWORK_INPUTS-1);
 
 
 begin  -- architecture RTL
@@ -78,21 +67,25 @@ begin  -- architecture RTL
   Inst_random2bitonic : entity work.random2bitonicNode
     port map (
       CLK         => CLK,
+      CTRL        => CTRL(C_NCOMP/2-1 downto 0),
+      RES         => RES(C_NCOMP/2-1 downto 0),
       RANDOM_IN   => RANDOM_IN,
-      BITONIC_OUT => s_pixel_bitonic
+      BITONIC_OUT => s_element_bitonic
       );
 
   Inst_bitonic2sort : entity work.bitonic2sortNode
     port map (
       CLK        => CLK,
-      BITONIC_IN => s_pixel_bitonic,
-      SORTED_OUT => s_pixel_sorted
+      CTRL       => CTRL(C_NCOMP-1 downto C_NCOMP/2),
+      RES        => RES(C_NCOMP-1 downto C_NCOMP/2),
+      BITONIC_IN => s_element_bitonic,
+      SORTED_OUT => s_element_sorted
       );
 
 
   -----------------------------------------------------------------------------
   -- Outputs
   -----------------------------------------------------------------------------
-  SORTED_OUT <= s_pixel_sorted;
+  SORTED_OUT <= s_element_sorted;
 
 end architecture RTL;
