@@ -62,22 +62,30 @@ architecture RTL of bitonicNode is
 begin  -- architecture RTL
 
   s_element_array <= ELEMENTS_IN;
+  
   -----------------------------------------------------------------------------
-  -- Sorting network
+  -- Sorting network Node
+  -----------------------------------------------------------------------------
+
+  -----------------------------------------------------------------------------
+  -- Generate the RIGHT logic
   -----------------------------------------------------------------------------
 
   GEN_RIGHT : if G_DIRECTION = "RIGHT" generate
     --
-    --CompGreaterThan <= '1' when s_element_array(i) > s_element_array(i + G_LENGTH) else
-    --                   '0';
+    GEN_NODES : for i in 0 to G_LENGTH - 1 generate
+      -- Compare
+      CompGreaterThan(i) <= '1' when s_element_array(i) > s_element_array(i + G_LENGTH) else
+                            '0';
+      CompControl(i) <= CompGreaterThan(i) and CTRL(i);
 
-    SORT_NET_RIGHT : process (s_element_array, s_sort_node)
-    begin
-      GEN_NODES : for i in 0 to G_LENGTH - 1 loop
+      SORT_NET_RIGHT : process (s_element_array, CompControl)
+      begin
+
         ---------------------------------------------------------------------------
-        -- First Stage
+        -- Swap Lines or Bypass (Forward)
         ---------------------------------------------------------------------------
-        if s_element_array(i) > s_element_array(i + G_LENGTH) then
+        if CompControl(i) = '1' then
           s_sort_node(i)            <= s_element_array(i + G_LENGTH);
           s_sort_node(i + G_LENGTH) <= s_element_array(i);
           MuxConf(i)                <= '1';  -- cross
@@ -86,9 +94,14 @@ begin  -- architecture RTL
           s_sort_node(i + G_LENGTH) <= s_element_array(i + G_LENGTH);
           MuxConf(i)                <= '0';  -- bypass
         end if;
-      end loop;
-    end process;
+      end process;
+    end generate GEN_NODES;
   end generate GEN_RIGHT;
+  
+
+  -----------------------------------------------------------------------------
+  -- Generate the LEFT logic
+  -----------------------------------------------------------------------------
 
   GEN_LEFT : if G_DIRECTION = "LEFT " generate
     --
@@ -97,8 +110,11 @@ begin  -- architecture RTL
       CompGreaterThan(i) <= '1' when s_element_array(i) > s_element_array(i + G_LENGTH) else
                             '0';
       CompControl(i) <= CompGreaterThan(i) and CTRL(i);
-      SORT_NET_LEFT : process (s_element_array, s_sort_node, CompControl)
+      SORT_NET_LEFT : process (s_element_array, CompControl)
       begin
+        -----------------------------------------------------------------------
+        -- Swap Lines or Bypass (Forward)
+        -----------------------------------------------------------------------
         if CompControl(i) = '0' then
           s_sort_node(i)            <= s_element_array(i + G_LENGTH);
           s_sort_node(i + G_LENGTH) <= s_element_array(i);
