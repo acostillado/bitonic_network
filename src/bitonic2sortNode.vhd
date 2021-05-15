@@ -26,6 +26,7 @@ use work.Bitonic_Network_pkg.all;
 
 entity bitonic2sortNode is
   generic (
+    G_ENABLE_PIPE   : integer := 1;
     G_ELEMENT_WIDTH : integer := 64
     );
   port (
@@ -88,7 +89,7 @@ begin  -- architecture RTL
     Inst_bitonic4elements_1_i : entity work.bitonicNode
       generic map(
         G_ELEMENT_WIDTH => G_ELEMENT_WIDTH,
-        G_REG_OUT       => 1,
+        G_REG_OUT       => G_ENABLE_PIPE,
         G_LENGTH        => 2,
         G_DIRECTION     => "RIGHT"
         )

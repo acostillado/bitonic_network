@@ -13,7 +13,8 @@ package Bitonic_Network_pkg is
   -- Constants
   -----------------------------------------------------------------------------
   constant C_ELEMENT_WIDTH       : integer := 64;
-  constant C_SORT_NETWORK_STAGES : integer := 2;
+  constant C_SORT_NETWORK_STAGES : integer := 2; -- random2bitonic + bitonic2sort
+  constant C_PIPE_CYCLES         : integer := 2; -- internal network pipeline
   constant C_VELEMENTS           : integer := 16;
   constant C_NLANES              : integer := 8;
   constant C_NETWORK_INPUTS      : integer := 8;

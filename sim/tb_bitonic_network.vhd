@@ -27,7 +27,7 @@ use work.Bitonic_Network_pkg.all;
 
 entity tb_bitonic_network is
   generic(
-    G_PIPE_CYCLES : integer := 2
+    G_ENABLE_PIPE : integer := 0
     );
 end entity tb_bitonic_network;
 
@@ -54,9 +54,15 @@ architecture simulation of tb_bitonic_network is
   signal ARSTN             : std_logic;
   signal RANDOM_SEQUENCE   : t_network_array(0 to 7);
   signal SORTED_SEQUENCE   : t_network_array(0 to 7);
+  signal FIXED_SEQUENCE    : t_network_array(0 to 7);
+  signal MATCH_SEQUENCE    : t_network_array(0 to 7);
   signal NETWORK_CONTROL   : std_logic_vector(C_NCOMP_TB-1 downto 0) := (others => '1');
   signal NETWORK_RESULT    : std_logic_vector(C_NCOMP_TB-1 downto 0);
   --
+  signal ENABLE : std_logic := '1';
+  signal VALID : std_logic  := '0';
+  --
+  signal cntNetworkConf_r  : unsigned(C_NCOMP_TB-1 downto 0) := (others => '0');
   signal tb_finish         : std_logic := '0';
 
 
@@ -89,41 +95,49 @@ begin
   -----------------------------------------------------------------------------
   -- Random number generator
   -----------------------------------------------------------------------------
-  process is
-    variable seed1 : positive;
-    variable seed2 : positive;
-    variable x     : real;
-    variable y     : integer;
-  begin
-    seed1 := 1;
-    seed2 := 1;
-    while (tb_finish = '0') loop
-      for n in 1 to 8 loop
-        uniform(seed1, seed2, x);
-        y                    := integer(floor(x * 1024.0));
-        report "Random number in 0 .. 1023: " & integer'image(y);
-        RANDOM_SEQUENCE(n-1) <= std_logic_vector(to_unsigned(y, C_ELEMENT_WIDTH));
-      end loop;
---    wait;
-      wait until rising_edge(ACLK);
-      seed1 := seed1 + 1;
-      seed2 := seed2 + 1;
-    end loop;
-  end process;
+--  process is
+--    variable seed1 : positive;
+--    variable seed2 : positive;
+--    variable x     : real;
+--    variable y     : integer;
+--  begin
+--    seed1 := 1;
+--    seed2 := 1;
+--    while (tb_finish = '0') loop
+--      for n in 1 to 8 loop
+--        uniform(seed1, seed2, x);
+--        y                    := integer(floor(x * 1024.0));
+--        report "Random number in 0 .. 1023: " & integer'image(y);
+--        RANDOM_SEQUENCE(n-1) <= std_logic_vector(to_unsigned(y, C_ELEMENT_WIDTH));
+--        FIXED_SEQUENCE(n-1) <= std_logic_vector(to_unsigned(n, C_ELEMENT_WIDTH));
+--        MATCH_SEQUENCE(n-1) <= std_logic_vector(to_unsigned(8-n, C_ELEMENT_WIDTH));
+--      end loop;
+----    wait;
+--      wait until rising_edge(ACLK);
+--      seed1 := seed1 + 1;
+--      seed2 := seed2 + 1;
+--    end loop;
+--  end process;
 
+GEN_SEQUENCES : for n in 1 to 8 generate
+        FIXED_SEQUENCE(n-1) <= std_logic_vector(to_unsigned(n, C_ELEMENT_WIDTH));
+        MATCH_SEQUENCE(n-1) <= std_logic_vector(to_unsigned(9-n, C_ELEMENT_WIDTH));
+end generate GEN_SEQUENCES;        
 
   -----------------------------------------------------------------------------
   -- UUT
   -----------------------------------------------------------------------------
   Bitonic_Network_0 : entity work.Bitonic_Network
     generic map (
-      G_PIPE_CYCLES => G_PIPE_CYCLES
+      G_ENABLE_PIPE => G_ENABLE_PIPE
       )
     port map (
       CLK        => ACLK,
       CTRL       => NETWORK_CONTROL,
       RES        => NETWORK_RESULT,
-      RANDOM_IN  => RANDOM_SEQUENCE,
+      ENABLE     => ENABLE,
+      VALID      => VALID,
+      RANDOM_IN  => FIXED_SEQUENCE, -- FIXED_SEQUENCE -- RANDOM_SEQUENCE
       SORTED_OUT => SORTED_SEQUENCE
       );
   -----------------------------------------------------------------------------
@@ -138,13 +152,22 @@ begin
     wait for C_RESET_PERIOD;
     --
     report "TB Starting ... " severity note;
-    wait for 1 us;
+    wait for 100 ms;
     tb_finish <= '1';
     report "---------------------------------------------------------------------------" severity note;
     report " TEST BENCH ENDED SUCCESFULLLY" severity note;
     report "---------------------------------------------------------------------------" severity note;
     wait;
 
+  end process;
+  
+  process(ACLK)
+  begin
+  if rising_edge(ACLK) then
+  NETWORK_CONTROL <= std_logic_vector(cntNetworkConf_r);
+  cntNetworkConf_r <= cntNetworkConf_r - 1;
+  assert SORTED_SEQUENCE /= MATCH_SEQUENCE severity failure;
+  end if;
   end process;
 
 

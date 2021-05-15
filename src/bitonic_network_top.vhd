@@ -30,12 +30,14 @@ entity Bitonic_Network is
   generic(
     G_NETWORK_INPUTS : integer := 8;
     G_ELEMENT_WIDTH  : integer := 64;
-    G_PIPE_CYCLES    : integer := 2                           --retiming?
+    G_ENABLE_PIPE    : integer := 1
     );
   port(
     CLK        : in  std_logic;
-    CTRL       : in  std_logic_vector(C_NCOMP-1 downto 0);  -- 2stages
-    RES        : out std_logic_vector(C_NCOMP-1 downto 0);  -- 2stages
+    CTRL       : in  std_logic_vector(C_NCOMP-1 downto 0);
+    RES        : out std_logic_vector(C_NCOMP-1 downto 0);
+    ENABLE     : in  std_logic;
+    VALID      : out std_logic;
     RANDOM_IN  : in  t_network_array(0 to G_NETWORK_INPUTS-1);
     SORTED_OUT : out t_network_array(0 to G_NETWORK_INPUTS-1)
     );
@@ -49,14 +51,20 @@ end Bitonic_Network;
 architecture RTL of Bitonic_Network is
 
   -----------------------------------------------------------------------------
+  -- Types
+  -----------------------------------------------------------------------------
+  type t_network_matrix is array (C_PIPE_CYCLES-1 downto 0) of t_network_array(0 to G_NETWORK_INPUTS-1);
+  -----------------------------------------------------------------------------
   -- Signals
   -----------------------------------------------------------------------------
---  signal s_element_bitonic : t_network_array(0 to G_NETWORK_INPUTS-1)(G_ELEMENT_WIDTH-1 downto 0);
---  signal s_element_sorted  : t_network_array(0 to G_NETWORK_INPUTS-1)(G_ELEMENT_WIDTH-1 downto 0);
+  signal s_element_bitonic  : t_network_array(0 to G_NETWORK_INPUTS-1);
+  signal s_element_sorted   : t_network_array(0 to G_NETWORK_INPUTS-1);
+  signal s_element_sorted_r : t_network_matrix;
+  signal valid_r            : std_logic_vector(C_PIPE_CYCLES-1 downto 0) := (others => '0');  --
 
-  signal s_element_bitonic : t_network_array(0 to G_NETWORK_INPUTS-1);
-  signal s_element_sorted  : t_network_array(0 to G_NETWORK_INPUTS-1);
-
+  -- In case retiming is desired:
+  --attribute retiming_backward : integer;
+  --attribute retiming_backward of s_element_sorted_r : signal is 1;
 
 begin  -- architecture RTL
 
@@ -65,6 +73,9 @@ begin  -- architecture RTL
   -----------------------------------------------------------------------------
 
   Inst_random2bitonic : entity work.random2bitonicNode
+    generic map (
+      G_ENABLE_PIPE => G_ENABLE_PIPE
+      )
     port map (
       CLK         => CLK,
       CTRL        => CTRL(C_NCOMP/2-1 downto 0),
@@ -74,18 +85,41 @@ begin  -- architecture RTL
       );
 
   Inst_bitonic2sort : entity work.bitonic2sortNode
+    generic map (
+      G_ENABLE_PIPE => G_ENABLE_PIPE
+      )
     port map (
       CLK        => CLK,
       CTRL       => CTRL(C_NCOMP-1 downto C_NCOMP/2),
       RES        => RES(C_NCOMP-1 downto C_NCOMP/2),
       BITONIC_IN => s_element_bitonic,
-      SORTED_OUT => s_element_sorted
+      SORTED_OUT => SORTED_OUT
       );
+
+  -- reg valid
+
+  GEN_PIPE_VALID : if G_ENABLE_PIPE = 1 generate
+    REG_OUT : process(CLK)
+    begin
+      if rising_edge(CLK) then
+        valid_r <= valid_r(C_PIPE_CYCLES-2 downto 0) & ENABLE;
+      -- s_element_sorted_r <= s_element_sorted_r(C_PIPE_CYCLES-2 downto 0) &
+      -- s_element_sorted; -- In case retiming is desired
+      end if;
+    end process;
+    VALID <= valid_r(valid_r'left);
+  end generate GEN_PIPE_VALID;
+
+  GEN_VALID : if G_ENABLE_PIPE = 0 generate
+    VALID <= ENABLE;
+  end generate GEN_VALID;
 
 
   -----------------------------------------------------------------------------
   -- Outputs
   -----------------------------------------------------------------------------
-  SORTED_OUT <= s_element_sorted;
+
+  -- SORTED_OUT <= s_element_sorted_r(s_element_sorted_r'left);  -- for retiming
+
 
 end architecture RTL;

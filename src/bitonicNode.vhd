@@ -62,7 +62,7 @@ architecture RTL of bitonicNode is
 begin  -- architecture RTL
 
   s_element_array <= ELEMENTS_IN;
-  
+
   -----------------------------------------------------------------------------
   -- Sorting network Node
   -----------------------------------------------------------------------------
@@ -75,9 +75,10 @@ begin  -- architecture RTL
     --
     GEN_NODES : for i in 0 to G_LENGTH - 1 generate
       -- Compare
-      CompGreaterThan(i) <= '1' when s_element_array(i) > s_element_array(i + G_LENGTH) else
+      CompGreaterThan(i) <= '1' when s_element_array(i) >= s_element_array(i + G_LENGTH) else
                             '0';
-      CompControl(i) <= CompGreaterThan(i) and CTRL(i);
+      CompControl(i) <= CompGreaterThan(i) when CTRL(i) = '1' else
+                        not CompGreaterThan(i);
 
       SORT_NET_RIGHT : process (s_element_array, CompControl)
       begin
@@ -97,7 +98,7 @@ begin  -- architecture RTL
       end process;
     end generate GEN_NODES;
   end generate GEN_RIGHT;
-  
+
 
   -----------------------------------------------------------------------------
   -- Generate the LEFT logic
@@ -109,7 +110,9 @@ begin  -- architecture RTL
       -- Compare
       CompGreaterThan(i) <= '1' when s_element_array(i) > s_element_array(i + G_LENGTH) else
                             '0';
-      CompControl(i) <= CompGreaterThan(i) and CTRL(i);
+      CompControl(i) <= CompGreaterThan(i) when CTRL(i) = '1' else
+                        not CompGreaterThan(i);
+
       SORT_NET_LEFT : process (s_element_array, CompControl)
       begin
         -----------------------------------------------------------------------
