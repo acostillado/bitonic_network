@@ -1,6 +1,6 @@
 -------------------------------------------------------------------------------
 -- Company     : Barcelona Supercomputing Center (BSC)
--- Engineer    : Daniel Jiménez Mazure
+-- Engineer    : Daniel Jimï¿½nez Mazure
 -- *******************************************************************
 -- File       : Bitonic_Network.vhd
 -- Author     : $Autor: dasjimaz@gmail.com $
@@ -73,7 +73,7 @@ begin  -- architecture RTL
   -- Sorting network (8 elements)
   -----------------------------------------------------------------------------
 
-  Inst_random2bitonic : entity work.random2bitonicNode
+  Inst_bitonicSort : entity work.bitonicSort
     generic map (
       G_ENABLE_PIPE => G_ENABLE_PIPE
       )
@@ -86,7 +86,7 @@ begin  -- architecture RTL
       BITONIC_OUT => s_element_bitonic
       );
 
-  Inst_bitonic2sort : entity work.bitonic2sortNode
+  Inst_bitonicMerge : entity work.bitonicMerge
     generic map (
       G_ENABLE_PIPE => G_ENABLE_PIPE
       )

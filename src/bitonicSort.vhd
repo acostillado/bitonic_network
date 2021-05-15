@@ -1,4 +1,3 @@
--------------------------------------------------------------------------------
 -- Company     : Barcelona Supercomputing Center (BSC)
 -- Engineer    : Daniel Jim�nez Mazure
 -- *******************************************************************
@@ -10,8 +9,8 @@
 -- *******************************************************************
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
--- Description: Bitonic Network. Merge stage:
--- 1) Sort a Bitonic sequence 
+-- Description: Bitonic Network. Bitonic stage
+-- 1) Create a bitonic sequence from a random input
 -------------------------------------------------------------------------------
 
 library IEEE;
@@ -24,27 +23,33 @@ use ieee.std_logic_textio.all;
 library work;
 use work.Bitonic_Network_pkg.all;
 
-entity bitonic2sortNode is
+entity bitonicSort is
   generic (
     G_ENABLE_PIPE   : integer := 1;
     G_ELEMENT_WIDTH : integer := 64
     );
   port (
-    CLK        : in  std_logic;
-    CTRL_EN    : in  std_logic;
-    CTRL       : in  std_logic_vector(C_NCOMP/2-1 downto 0);
-    RES        : out std_logic_vector(C_NCOMP/2-1 downto 0);
-    BITONIC_IN : in  t_network_array(0 to 7);
-    SORTED_OUT : out t_network_array(0 to 7)
+    CLK         : in  std_logic;
+    CTRL_EN     : in  std_logic;
+    CTRL        : in  std_logic_vector(C_NCOMP/2-1 downto 0);
+    RES         : out std_logic_vector(C_NCOMP/2-1 downto 0);
+    RANDOM_IN   : in  t_network_array(0 to 7);
+    BITONIC_OUT : out t_network_array(0 to 7)
     );
-end bitonic2sortNode;
+end bitonicSort;
 
 -------------------------------------------------------------------------------
 -- Arch
 -- Not using components anymore but using direct entity instantiation
 -------------------------------------------------------------------------------
 
-architecture RTL of bitonic2sortNode is
+architecture RTL of bitonicSort is
+
+  -----------------------------------------------------------------------------
+  -- CONSTANTS
+  -----------------------------------------------------------------------------
+  constant C_SORT_NETWORK_DEPTH : integer := 8;  -- log^2 (8) (8=NUM_ELEM)
+  constant C_NUM_ELEMENTS       : integer := 8;
 
   -----------------------------------------------------------------------------
   -- SIGNALS
@@ -55,7 +60,7 @@ architecture RTL of bitonic2sortNode is
   signal s3_sort_node : t_network_array(0 to 7);
 
   -- Mux configuration Logic
-  signal muxConf1stStage : t_muxConf1x4;
+  signal muxConf1stStage : t_muxConf4x1;
   signal muxConf2ndStage : t_muxConf2x2;
   signal muxConf3rdStage : t_muxConf4x1;
 
@@ -63,37 +68,40 @@ architecture RTL of bitonic2sortNode is
 begin  -- architecture RTL
 
   -----------------------------------------------------------------------------
-  -- First Stage
-  -----------------------------------------------------------------------------  
-  GEN_BITONIC_1ST_STAGE : for i in 0 to 0 generate
-    Inst_bitonic8elements_0_0 : entity work.bitonicNode
+  -- FIRST STAGE
+  -----------------------------------------------------------------------------
+  GEN_BITONIC_1ST_STAGE : for i in 0 to 3 generate
+  begin
+    Inst_bitonic2elements_0_i : entity work.bitonicNode
       generic map(
         G_ELEMENT_WIDTH => G_ELEMENT_WIDTH,
         G_REG_OUT       => 0,
-        G_LENGTH        => 4,
-        G_DIRECTION     => "RIGHT"
+        G_LENGTH        => 1,
+        G_DIRECTION     => C_DIRECTION(i mod 2)
         )
       port map(
-        CLK          => CLK,
-        CTRL_EN      => CTRL_EN,
-        CTRL         => CTRL(3+i downto i+0),
-        MUX_CONF     => muxConf1stStage(i),
-        ELEMENTS_IN  => BITONIC_IN,
-        ELEMENTS_OUT => s_sort_node
+        CLK             => CLK,
+        CTRL_EN         => CTRL_EN,
+        CTRL            => CTRL(i+0 downto i+0),
+        MUX_CONF        => muxConf1stStage(i),
+        ELEMENTS_IN(0)  => RANDOM_IN(2*i),
+        ELEMENTS_IN(1)  => RANDOM_IN(2*i+1),
+        ELEMENTS_OUT(0) => s_sort_node(2*i),
+        ELEMENTS_OUT(1) => s_sort_node(2*i+1)
         );
   end generate GEN_BITONIC_1ST_STAGE;
 
-
------------------------------------------------------------------------------
+  -----------------------------------------------------------------------------
   -- Second Stage
   -----------------------------------------------------------------------------
+
   GEN_BITONIC_2ND_STAGE : for i in 0 to 1 generate
     Inst_bitonic4elements_1_i : entity work.bitonicNode
       generic map(
         G_ELEMENT_WIDTH => G_ELEMENT_WIDTH,
         G_REG_OUT       => G_ENABLE_PIPE,
         G_LENGTH        => 2,
-        G_DIRECTION     => "RIGHT"
+        G_DIRECTION     => C_DIRECTION(i mod 2)
         )
       port map(
         CLK             => CLK,
@@ -115,14 +123,14 @@ begin  -- architecture RTL
   -----------------------------------------------------------------------------
   -- Third Stage
   -----------------------------------------------------------------------------
-
   GEN_BITONIC_3RD_STAGE : for i in 0 to 3 generate
+  begin
     Inst_bitonic2elements_2_i : entity work.bitonicNode
       generic map(
         G_ELEMENT_WIDTH => G_ELEMENT_WIDTH,
         G_REG_OUT       => 0,
         G_LENGTH        => 1,
-        G_DIRECTION     => "RIGHT"
+        G_DIRECTION     => C_DIRECTION(i/2)
         )
       port map(
         CLK             => CLK,
@@ -131,16 +139,19 @@ begin  -- architecture RTL
         MUX_CONF        => muxConf3rdStage(i),
         ELEMENTS_IN(0)  => s2_sort_node(2*i),
         ELEMENTS_IN(1)  => s2_sort_node(2*i+1),
-        ELEMENTS_OUT(0) => SORTED_OUT(2*i),
-        ELEMENTS_OUT(1) => SORTED_OUT(2*i+1)
+        ELEMENTS_OUT(0) => BITONIC_OUT(2*i),
+        ELEMENTS_OUT(1) => BITONIC_OUT(2*i+1)
         );
   end generate GEN_BITONIC_3RD_STAGE;
+
 
   -----------------------------------------------------------------------------
   -- Output RES
   -----------------------------------------------------------------------------
-  RES(11 downto 8) <= muxConf3rdStage(3) & muxConf3rdStage(2) & muxConf3rdStage(1) & muxConf3rdStage(0);
+  --RES <= muxConf3rdStage(0 to 3) & muxConf2ndStage(0 to 3) & muxConf1stStage(0);
+  RES(3 downto 0)  <= muxConf1stStage(3) & muxConf1stStage(2) & muxConf1stStage(1) & muxConf1stStage(0);
   RES(7 downto 4)  <= muxConf2ndStage(1) & muxConf2ndStage(0);
-  RES(3 downto 0)  <= muxConf1stStage(0);
+  RES(11 downto 8) <= muxConf3rdStage(3) & muxConf3rdStage(2) & muxConf3rdStage(1) & muxConf3rdStage(0);
+
 
 end architecture RTL;
