@@ -33,6 +33,7 @@ entity bitonicNode is
   port (
     CLK          : in  std_logic;
     CTRL         : in  std_logic_vector(G_LENGTH-1 downto 0);
+    CTRL_EN      : in  std_logic;
     MUX_CONF     : out std_logic_vector(G_LENGTH-1 downto 0);
     ELEMENTS_IN  : in  t_network_array(0 to G_LENGTH * 2 - 1);
     ELEMENTS_OUT : out t_network_array(0 to G_LENGTH * 2 - 1)
@@ -55,7 +56,6 @@ architecture RTL of bitonicNode is
   signal s_element_array : t_network_array(0 to G_LENGTH * 2 - 1);
   signal s_sort_node     : t_network_array(0 to G_LENGTH * 2 - 1);
   --
-  signal CompGreaterThan : std_logic_vector(G_LENGTH-1 downto 0);
   signal CompControl     : std_logic_vector(G_LENGTH-1 downto 0);
   signal MuxConf         : std_logic_vector(G_LENGTH-1 downto 0);
 
@@ -75,10 +75,11 @@ begin  -- architecture RTL
     --
     GEN_NODES : for i in 0 to G_LENGTH - 1 generate
       -- Compare
-      CompGreaterThan(i) <= '1' when s_element_array(i) >= s_element_array(i + G_LENGTH) else
-                            '0';
-      CompControl(i) <= CompGreaterThan(i) when CTRL(i) = '1' else
-                        not CompGreaterThan(i);
+      MuxConf(i) <= '1' when s_element_array(i) >= s_element_array(i + G_LENGTH) else
+                    '0';
+      CompControl(i) <= MuxConf(i) when CTRL_EN = '0' else
+                        CTRL(i);
+
 
       SORT_NET_RIGHT : process (s_element_array, CompControl)
       begin
@@ -89,11 +90,9 @@ begin  -- architecture RTL
         if CompControl(i) = '1' then
           s_sort_node(i)            <= s_element_array(i + G_LENGTH);
           s_sort_node(i + G_LENGTH) <= s_element_array(i);
-          MuxConf(i)                <= '1';  -- cross
         else
           s_sort_node(i)            <= s_element_array(i);
           s_sort_node(i + G_LENGTH) <= s_element_array(i + G_LENGTH);
-          MuxConf(i)                <= '0';  -- bypass
         end if;
       end process;
     end generate GEN_NODES;
@@ -108,10 +107,10 @@ begin  -- architecture RTL
     --
     GEN_NODES : for i in 0 to G_LENGTH - 1 generate
       -- Compare
-      CompGreaterThan(i) <= '1' when s_element_array(i) > s_element_array(i + G_LENGTH) else
-                            '0';
-      CompControl(i) <= CompGreaterThan(i) when CTRL(i) = '1' else
-                        not CompGreaterThan(i);
+      MuxConf(i) <= '1' when s_element_array(i) > s_element_array(i + G_LENGTH) else
+                    '0';
+      CompControl(i) <= MuxConf(i) when CTRL_EN = '0' else
+                        CTRL(i);
 
       SORT_NET_LEFT : process (s_element_array, CompControl)
       begin
@@ -121,11 +120,9 @@ begin  -- architecture RTL
         if CompControl(i) = '0' then
           s_sort_node(i)            <= s_element_array(i + G_LENGTH);
           s_sort_node(i + G_LENGTH) <= s_element_array(i);
-          MuxConf(i)                <= '1';  -- cross
         else
           s_sort_node(i)            <= s_element_array(i);
           s_sort_node(i + G_LENGTH) <= s_element_array(i + G_LENGTH);
-          MuxConf(i)                <= '0';  -- bypass
         end if;
       end process;
     end generate GEN_NODES;

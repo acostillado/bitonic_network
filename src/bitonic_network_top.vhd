@@ -34,6 +34,7 @@ entity Bitonic_Network is
     );
   port(
     CLK        : in  std_logic;
+    CTRL_EN    : in  std_logic;
     CTRL       : in  std_logic_vector(C_NCOMP-1 downto 0);
     RES        : out std_logic_vector(C_NCOMP-1 downto 0);
     ENABLE     : in  std_logic;
@@ -78,6 +79,7 @@ begin  -- architecture RTL
       )
     port map (
       CLK         => CLK,
+      CTRL_EN     => CTRL_EN,
       CTRL        => CTRL(C_NCOMP/2-1 downto 0),
       RES         => RES(C_NCOMP/2-1 downto 0),
       RANDOM_IN   => RANDOM_IN,
@@ -90,6 +92,7 @@ begin  -- architecture RTL
       )
     port map (
       CLK        => CLK,
+      CTRL_EN    => CTRL_EN,
       CTRL       => CTRL(C_NCOMP-1 downto C_NCOMP/2),
       RES        => RES(C_NCOMP-1 downto C_NCOMP/2),
       BITONIC_IN => s_element_bitonic,

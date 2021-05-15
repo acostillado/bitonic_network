@@ -40,12 +40,12 @@ architecture simulation of tb_bitonic_network is
   -----------------------------------------------------------------------------
   -- Constants
   -----------------------------------------------------------------------------
-  constant C_RESET_PERIOD  : time      := 1 us;
-  constant CLK_125_PERIOD  : time      := 8.0 ns;
-  constant C_ELEMENT_WIDTH : integer   := 64;
+  constant C_RESET_PERIOD  : time                                    := 1 us;
+  constant CLK_125_PERIOD  : time                                    := 8.0 ns;
+  constant C_ELEMENT_WIDTH : integer                                 := 64;
   --
-  constant C_LOGnDEPTH_TB  : integer   := C_LOGnDEPTH;
-  constant C_NCOMP_TB      : integer   := C_NCOMP;
+  constant C_LOGnDEPTH_TB  : integer                                 := C_LOGnDEPTH;
+  constant C_NCOMP_TB      : integer                                 := C_NCOMP;
   --
   -----------------------------------------------------------------------------
   -- Signals
@@ -58,12 +58,13 @@ architecture simulation of tb_bitonic_network is
   signal MATCH_SEQUENCE    : t_network_array(0 to 7);
   signal NETWORK_CONTROL   : std_logic_vector(C_NCOMP_TB-1 downto 0) := (others => '1');
   signal NETWORK_RESULT    : std_logic_vector(C_NCOMP_TB-1 downto 0);
+  signal CTRL_EN           : std_logic                               := '0';
   --
-  signal ENABLE : std_logic := '1';
-  signal VALID : std_logic  := '0';
+  signal ENABLE            : std_logic                               := '1';
+  signal VALID             : std_logic                               := '0';
   --
-  signal cntNetworkConf_r  : unsigned(C_NCOMP_TB-1 downto 0) := (others => '0');
-  signal tb_finish         : std_logic := '0';
+  signal cntNetworkConf_r  : unsigned(C_NCOMP_TB-1 downto 0)         := (others => '0');
+  signal tb_finish         : std_logic                               := '0';
 
 
 begin
@@ -95,34 +96,32 @@ begin
   -----------------------------------------------------------------------------
   -- Random number generator
   -----------------------------------------------------------------------------
---  process is
---    variable seed1 : positive;
---    variable seed2 : positive;
---    variable x     : real;
---    variable y     : integer;
---  begin
---    seed1 := 1;
---    seed2 := 1;
---    while (tb_finish = '0') loop
---      for n in 1 to 8 loop
---        uniform(seed1, seed2, x);
---        y                    := integer(floor(x * 1024.0));
---        report "Random number in 0 .. 1023: " & integer'image(y);
---        RANDOM_SEQUENCE(n-1) <= std_logic_vector(to_unsigned(y, C_ELEMENT_WIDTH));
---        FIXED_SEQUENCE(n-1) <= std_logic_vector(to_unsigned(n, C_ELEMENT_WIDTH));
---        MATCH_SEQUENCE(n-1) <= std_logic_vector(to_unsigned(8-n, C_ELEMENT_WIDTH));
---      end loop;
-----    wait;
---      wait until rising_edge(ACLK);
---      seed1 := seed1 + 1;
---      seed2 := seed2 + 1;
---    end loop;
---  end process;
+  process is
+    variable seed1 : positive;
+    variable seed2 : positive;
+    variable x     : real;
+    variable y     : integer;
+  begin
+    seed1 := 1;
+    seed2 := 1;
+    while (tb_finish = '0') loop
+      for n in 1 to 8 loop
+        uniform(seed1, seed2, x);
+        y                    := integer(floor(x * 1024.0));
+        report "Random number in 0 .. 1023: " & integer'image(y);
+        RANDOM_SEQUENCE(n-1) <= std_logic_vector(to_unsigned(y, C_ELEMENT_WIDTH));
+      end loop;
+      wait;
+      wait until rising_edge(ACLK);
+      seed1 := seed1 + 1;
+      seed2 := seed2 + 1;
+    end loop;
+  end process;
 
-GEN_SEQUENCES : for n in 1 to 8 generate
-        FIXED_SEQUENCE(n-1) <= std_logic_vector(to_unsigned(n, C_ELEMENT_WIDTH));
-        MATCH_SEQUENCE(n-1) <= std_logic_vector(to_unsigned(9-n, C_ELEMENT_WIDTH));
-end generate GEN_SEQUENCES;        
+  GEN_SEQUENCES : for n in 1 to 8 generate
+    FIXED_SEQUENCE(n-1) <= std_logic_vector(to_unsigned(n, C_ELEMENT_WIDTH));
+    MATCH_SEQUENCE(n-1) <= std_logic_vector(to_unsigned(9-n, C_ELEMENT_WIDTH));
+  end generate GEN_SEQUENCES;
 
   -----------------------------------------------------------------------------
   -- UUT
@@ -133,11 +132,12 @@ end generate GEN_SEQUENCES;
       )
     port map (
       CLK        => ACLK,
+      CTRL_EN    => CTRL_EN,
       CTRL       => NETWORK_CONTROL,
       RES        => NETWORK_RESULT,
       ENABLE     => ENABLE,
       VALID      => VALID,
-      RANDOM_IN  => FIXED_SEQUENCE, -- FIXED_SEQUENCE -- RANDOM_SEQUENCE
+      RANDOM_IN  => FIXED_SEQUENCE,     -- FIXED_SEQUENCE -- RANDOM_SEQUENCE
       SORTED_OUT => SORTED_SEQUENCE
       );
   -----------------------------------------------------------------------------
@@ -160,14 +160,14 @@ end generate GEN_SEQUENCES;
     wait;
 
   end process;
-  
+
   process(ACLK)
   begin
-  if rising_edge(ACLK) then
-  NETWORK_CONTROL <= std_logic_vector(cntNetworkConf_r);
-  cntNetworkConf_r <= cntNetworkConf_r - 1;
-  assert SORTED_SEQUENCE /= MATCH_SEQUENCE severity failure;
-  end if;
+    if rising_edge(ACLK) then
+      --NETWORK_CONTROL <= std_logic_vector(cntNetworkConf_r);
+      --cntNetworkConf_r <= cntNetworkConf_r - 1;
+      assert SORTED_SEQUENCE /= MATCH_SEQUENCE severity warning;
+    end if;
   end process;
 
 

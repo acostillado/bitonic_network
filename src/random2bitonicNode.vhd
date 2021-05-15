@@ -30,6 +30,7 @@ entity random2bitonicNode is
     );
   port (
     CLK         : in  std_logic;
+    CTRL_EN     : in  std_logic;
     CTRL        : in  std_logic_vector(C_NCOMP/2-1 downto 0);
     RES         : out std_logic_vector(C_NCOMP/2-1 downto 0);
     RANDOM_IN   : in  t_network_array(0 to 7);
@@ -80,6 +81,7 @@ begin  -- architecture RTL
         )
       port map(
         CLK             => CLK,
+        CTRL_EN         => CTRL_EN,
         CTRL            => CTRL(i+0 downto i+0),
         MUX_CONF        => muxConf1stStage(i),
         ELEMENTS_IN(0)  => RANDOM_IN(2*i),
@@ -103,6 +105,7 @@ begin  -- architecture RTL
         )
       port map(
         CLK             => CLK,
+        CTRL_EN         => CTRL_EN,
         CTRL            => CTRL(2*i+5 downto 2*i+4),
         MUX_CONF        => muxConf2ndStage(i),
         ELEMENTS_IN(0)  => s_sort_node(4*i),
@@ -131,6 +134,7 @@ begin  -- architecture RTL
         )
       port map(
         CLK             => CLK,
+        CTRL_EN         => CTRL_EN,
         CTRL            => CTRL(1*i+8 downto 1*i+8),
         MUX_CONF        => muxConf3rdStage(i),
         ELEMENTS_IN(0)  => s2_sort_node(2*i),
