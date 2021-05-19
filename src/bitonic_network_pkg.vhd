@@ -20,7 +20,7 @@ package Bitonic_Network_pkg is
   constant C_NETWORK_INPUTS : integer := 8;
   constant C_LOGnDEPTH      : integer := integer(ceil(log2(real(C_NETWORK_INPUTS))));
   constant C_NCOMP          : integer := C_LOGnDEPTH * C_NETWORK_INPUTS;
-
+  
   -----------------------------------------------------------------------------
   -- Types
   -----------------------------------------------------------------------------

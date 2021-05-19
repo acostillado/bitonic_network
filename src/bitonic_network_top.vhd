@@ -6,7 +6,7 @@
 -- Author     : $Autor: dasjimaz@gmail.com $
 -- Date       : $Date: 2021-05-06 $
 -- Revisions  : $Revision: $
--- Last update: 2021-05-15
+-- Last update: 2021-05-18
 -- *******************************************************************
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -68,6 +68,7 @@ architecture RTL of Bitonic_Network is
   --attribute retiming_backward of s_element_sorted_r : signal is 1;
 
 begin  -- architecture RTL
+
 
   -----------------------------------------------------------------------------
   -- Sorting network (8 elements)
